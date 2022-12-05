@@ -112,6 +112,7 @@ def backtesting(tiker_data):
     stats = bt.run()
     bt.plot()
     print(stats)
+    return stats
 
 
 def backtesting_optimize(tiker_data, maximize):
@@ -123,19 +124,19 @@ def backtesting_optimize(tiker_data, maximize):
                                  kijun_param=range(20, 52, 1),
                                  senkou_param=range(52, 100, 1)
     """
-    stats, heatmap = bt.optimize(tenkan_param=range(8, 10, 1),
-                                 kijun_param=range(15, 17, 1),
-                                 senkou_param=range(60, 70, 1),
-                                 maximize=maximize, return_heatmap=True
-                                 )
-
-    # stats, heatmap = bt.optimize(tenkan_param=range(8, 15, 1),
-    #                              kijun_param=range(15, 30, 1),
-    #                              senkou_param=range(45, 70, 1),
+    # stats, heatmap = bt.optimize(tenkan_param=range(8, 10, 1),
+    #                              kijun_param=range(15, 17, 1),
+    #                              senkou_param=range(60, 70, 1),
     #                              maximize=maximize, return_heatmap=True
     #                              )
 
-    stats = bt.run()
+    stats, heatmap = bt.optimize(tenkan_param=range(8, 15, 1),
+                                 kijun_param=range(15, 35, 1),
+                                 senkou_param=range(45, 80, 1),
+                                 maximize=maximize, return_heatmap=True
+                                 )
+
+    # stats = bt.run()
     # bt.plot()
     # print(stats)
 
@@ -173,33 +174,43 @@ def transform_stats(ticker: str, maximize: str, stats) -> str:
     return ', '.join(stats_str) + '\n'
 
 
-def write_file(line):
+def save_file(line):
     with open('stats.csv', 'a') as f:
         f.write(line)
+
+def open_file_figies():
+    df_figies = pd.read_csv('Figi.csv')
+    return df_figies
 
 
 if __name__ == "__main__":
     # ['ES=F', "KWEB"]
-    ticker = 'VIPS'
+    ticker = 'SIBN'
+
+
     maximize_optimizer = 'Return [%]'
-    # from_day = now() - timedelta(weeks=100)
-    from_day = datetime(2016, 6, 1)
-    end_day = datetime(2015, 4, 30)
+    from_day = now() - timedelta(weeks=52*5)
+    # from_day = datetime(2006, 1, 1)
+    # end_day = datetime(2015, 4, 30)
     # _plotting._MAX_CANDLES = 20_000             #тест избавления от ошибки
 
     with Client(TOKEN) as client:
-        for i in get_figies(ticker):
-            print(i.name)
+        # for i in get_figies(ticker):
+        #     print(i.name)
         # figi = get_figies(ticker)[0].figi
         # print(figi)
-        #
-        # data = get_candles(figi, from_day)
+        tickers = open_file_figies().Name[5:].reset_index()
+        figies = open_file_figies().figi[5:].reset_index()
+        for i in range(len(open_file_figies())):
+            data = get_candles(figies[i], from_day)
 
-        data_yfin = yfinance.download(ticker, start=from_day, interval='1d')
+            # data_yfin = yfinance.download(ticker, start=from_day, interval='1d')
 
-        # backtesting(data_yfin)
-        stats = backtesting_optimize(data_yfin, maximize=maximize_optimizer)
-        lines = transform_stats(ticker=ticker, stats=stats, maximize=maximize_optimizer)
-        write_file(lines)
+            # stats = backtesting(data)
+            stats = backtesting_optimize(data, maximize=maximize_optimizer)
+
+            line = transform_stats(ticker=tickers[i], stats=stats, maximize=maximize_optimizer)
+
+            save_file(line)
 
 
