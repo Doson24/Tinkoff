@@ -3,11 +3,12 @@ import datetime
 from backtesting.test import GOOG
 from backtesting.lib import crossover
 from backtesting import Strategy
-
+from tinkoff.invest.utils import now
 import pandas_ta as ta
 from backtesting import Backtest
 import yfinance as yf
 import pandas as pd
+from datetime import timedelta
 
 
 def spanA(data, tenkan_param, kijun_param, senkou_param):
@@ -85,25 +86,28 @@ class Ichimoku_cross(Strategy):
         """
 
         if self.position:
-            if self.data.Low[-1] < self.kijun_sen[-1] \
-                    and self.tenkan_sen[-1] < self.kijun_sen[-1]: \
+            if (self.data.Low[-1] < self.kijun_sen[-1] and self.tenkan_sen[-1] < self.kijun_sen[-1])\
+                    or self.data.Low[-1] < self.span_B[-1] \
+                    or (self.data.Low[-1] < self.kijun_sen[-1] and self.tenkan_sen[-1] > self.kijun_sen[-1] and self.data.Close[-2] > self.tenkan_sen[-1]):  #добавил - уменьшилась просадка
                     # and (self.data.Close[-1] < self.span_A[-1] or self.data.Close[-1] < self.span_B[-1]):
                 self.position.close()
 
         else:
             if self.data.Close[-1] > self.span_A[-1] > self.span_B[-1] and \
-                    self.tenkan_sen[-1] > self.kijun_sen[-1] and \
-                    self.chikou_span[-1] > self.data.High[-26]:
+                    self.tenkan_sen[-1] > self.kijun_sen[-1] \
+                    and self.chikou_span[-1] > self.data.High[-26]:
                 self.buy()
                 # self.buy(sl=self.span_B[-1])
 
 
 if __name__ == '__main__':
-    tiker = yf.Ticker("BABA")
+    tiker = yf.Ticker("TCSG")
     """
     Для интервала в "1h" данные только за последние 730 дней
     """
-    tiker_data = tiker.history(period='max')
+    from_day = now() - timedelta(weeks=600)
+
+    tiker_data = tiker.history(period='max', interval='1d')
 
     bt = Backtest(tiker_data, Ichimoku_cross, cash=10000, commission=.002, exclusive_orders=True)
     """
@@ -112,20 +116,20 @@ if __name__ == '__main__':
                                  kijun_param=range(20, 52, 1),
                                  senkou_param=range(52, 100, 1)
     """
-
-    # stats, heatmap = bt.optimize(tenkan_param=range(5, 20, 1),
-    #                              kijun_param=range(20, 52, 1),
-    #                              senkou_param=range(52, 100, 1),
-    #                              maximize='Equity Final [$]', return_heatmap=True
-    #                              )
-
-    stats = bt.run()
-    bt.plot()
-    print(stats)
-
+    # stats = bt.run()
+    # bt.plot()
     # print(stats)
-    # print(stats.tail())
-    # print(stats._strategy)
-    # print(heatmap)
-    # bt.plot(plot_volume=True, plot_pl=True)
-    # heatmap.plot()
+
+    stats, heatmap = bt.optimize(tenkan_param=range(8, 15, 1),
+                                 kijun_param=range(15, 25, 1),
+                                 senkou_param=range(60, 120, 1),
+                                 maximize='Return [%]', return_heatmap=True
+                                 )
+
+
+    print(stats)
+    print(stats.tail())
+    print(stats._strategy)
+    print(heatmap)
+    bt.plot(plot_volume=True, plot_pl=True)
+    heatmap.plot()
