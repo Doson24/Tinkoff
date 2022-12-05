@@ -101,7 +101,7 @@ class Ichimoku_cross(Strategy):
 
 
 if __name__ == '__main__':
-    tiker = yf.Ticker("TCSG")
+    tiker = yf.Ticker("BABA")
     """
     Для интервала в "1h" данные только за последние 730 дней
     """
@@ -119,11 +119,11 @@ if __name__ == '__main__':
     # stats = bt.run()
     # bt.plot()
     # print(stats)
-
-    stats, heatmap = bt.optimize(tenkan_param=range(8, 15, 1),
-                                 kijun_param=range(15, 25, 1),
-                                 senkou_param=range(60, 120, 1),
-                                 maximize='Return [%]', return_heatmap=True
+    maximize = 'Return [%]'
+    stats, heatmap = bt.optimize(tenkan_param=range(8, 10, 1),
+                                 kijun_param=range(15, 17, 1),
+                                 senkou_param=range(60, 70, 1),
+                                 maximize=maximize, return_heatmap=True
                                  )
 
 
