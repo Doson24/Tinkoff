@@ -21,7 +21,7 @@ def run(ticker):
         # print(r)
 
         l = []
-        for method in ['shares', 'bonds', 'etfs']:  # , 'currencies', 'futures']:
+        for method in ['shares', 'bonds', 'etfs', 'currencies', 'futures']:
             for item in getattr(instruments, method)().instruments:
                 l.append({
                     'ticker': item.ticker,
@@ -35,7 +35,7 @@ def run(ticker):
 
         df = df[df['ticker'] == ticker]
         if df.empty:
-            print(f"Нет тикера {ticker}")
+            return (f"Нет тикера {ticker}")
 
         # print(df.iloc[0])
         return (df['figi'].iloc[0])
@@ -49,11 +49,22 @@ def get_limits():
             print(unary_limit.limit_per_minute, "запросов в минуту для:")
             print("\t" + "\n\t".join(methods))
 
+def get_figies(ticker: str) -> list:
+    with Client(TOKEN) as cl:
+        # Поиск figi по названию
+        r = cl.instruments.find_instrument(query=ticker)
+        # return [i.figi for i in r.instruments]
+        return r.instruments
+
 
 if __name__ == '__main__':
-    tickers = ["SIBN", 'CHMF', 'ROSN', 'AFLT', 'OZON', 'YNDX', 'SBER', 'TATN', 'ALRS', 'FLOT', 'GMKN',
-              'LKOH', 'TCSG', 'POLY', 'PLZL', 'VKCO']
+    # tickers = ["SIBN", 'CHMF', 'ROSN', 'AFLT', 'OZON', 'YNDX', 'SBER', 'TATN', 'ALRS', 'FLOT', 'GMKN',
+    #           'LKOH', 'TCSG', 'POLY', 'PLZL', 'VKCO']
 
-    # tickers = ['USDRUB']
+    tickers = ['USD']
     for ticker in tickers:
         print(f'{ticker}, {run(ticker)}')
+
+        data = get_figies(ticker)
+        for i in range(len(data)):
+            print(data[i].ticker, data[i].figi)
