@@ -8,6 +8,8 @@ from tinkoff.invest import CandleInterval, Client, HistoricCandle
 from tinkoff.invest.utils import now
 from tinkoff.invest.services import InstrumentsService, MarketDataService
 from backtesting import Backtest
+from yfinance import ticker
+
 from Ichimoku import Ichimoku_cross
 import yfinance
 from backtesting import _plotting
@@ -18,7 +20,7 @@ from backtesting import _plotting
 TOKEN = os.environ["TOKEN_test"]
 
 
-def get_candles(figi: str, from_day: datetime) -> DataFrame:
+def get_candles(figi: str, from_day: datetime, interval=CandleInterval.CANDLE_INTERVAL_DAY) -> DataFrame:
     # instruments: InstrumentsService = client.instruments
     # market_data: MarketDataService = client.market_data
 
@@ -56,7 +58,7 @@ def get_candles(figi: str, from_day: datetime) -> DataFrame:
         figi=figi,
         from_=from_day,
         to=now(),
-        interval=CandleInterval.CANDLE_INTERVAL_DAY, )
+        interval=interval, )
 
     return create_df(c)
 
@@ -84,7 +86,7 @@ def create_df(candles: [HistoricCandle]) -> DataFrame:
 
 def get_tiker(instruments):
     l = []
-    for method in ['shares', 'bonds', 'etfs']:  # , 'currencies', 'futures']:
+    for method in ['shares', 'bonds', 'etfs', 'currencies', 'futures']:
         for item in getattr(instruments, method)().instruments:
             l.append({
                 'ticker': item.ticker,
@@ -105,17 +107,23 @@ def cast_money(v):
     return v.units + v.nano / 1e9  # nano - 9 нулей
 
 
-def backtesting(tiker_data):
+def view_save_plot(ticker, stats, bt):
+    bt.plot(plot_volume=True, plot_pl=True, filename=f'data/{ticker}_{stats._strategy}'
+                                                     f'{stats._strategy.tenkan_param}-{stats._strategy.kijun_param}-'
+                                                     f'{stats._strategy.senkou_param}')
+
+
+def backtesting(ticker, tiker_data):
     print(f'[+]Backtesting start')
     bt = Backtest(tiker_data, Ichimoku_cross, cash=10000, commission=.002, exclusive_orders=True)
 
     stats = bt.run()
-    bt.plot()
+    view_save_plot(ticker, stats, bt)
     print(stats)
     return stats
 
 
-def backtesting_optimize(tiker_data, maximize):
+def backtesting_optimize(ticker, tiker_data, maximize):
     print(f'[+]Backtesting start')
     bt = Backtest(tiker_data, Ichimoku_cross, cash=10000, commission=.002, exclusive_orders=True)
     """
@@ -144,12 +152,12 @@ def backtesting_optimize(tiker_data, maximize):
     print(stats.tail())
     print(stats._strategy)
     # print(heatmap)
-    bt.plot(plot_volume=True, plot_pl=True)
+    view_save_plot(ticker, stats, bt)
     # heatmap.plot()
     return stats
 
 
-def transform_stats(ticker: str, maximize: str, stats) -> str:
+def transform_stats(ticker: str, maximize: str, stats, interval: str) -> str:
     """
     :param ticker:
     :param maximize:
@@ -170,6 +178,7 @@ def transform_stats(ticker: str, maximize: str, stats) -> str:
     stats_str.insert(0, str(kijun_optimaze))
     stats_str.insert(0, str(tenkan_optimaze))
     stats_str.append(maximize)
+    stats_str.append(interval)
     stats_str.insert(0, ticker)
     return ', '.join(stats_str) + '\n'
 
@@ -185,11 +194,13 @@ def open_file_figies():
 
 if __name__ == "__main__":
     # ['ES=F', "KWEB"]
-    ticker = 'SIBN'
-
+    # ticker = 'SIBN'
+    tickers = ['USDRUB']  # open_file_figies().Name
+    figies = ['BBG0013HGFT4']  # open_file_figies().figi
+    interval = CandleInterval.CANDLE_INTERVAL_HOUR
 
     maximize_optimizer = 'Return [%]'
-    from_day = now() - timedelta(weeks=52*5)
+    from_day = now() - timedelta(weeks=52*2)
     # from_day = datetime(2006, 1, 1)
     # end_day = datetime(2015, 4, 30)
     # _plotting._MAX_CANDLES = 20_000             #тест избавления от ошибки
@@ -199,18 +210,20 @@ if __name__ == "__main__":
         #     print(i.name)
         # figi = get_figies(ticker)[0].figi
         # print(figi)
-        tickers = open_file_figies().Name[5:].reset_index()
-        figies = open_file_figies().figi[5:].reset_index()
-        for i in range(len(open_file_figies())):
-            data = get_candles(figies[i], from_day)
+
+        for i in range(len(tickers)):
+            candels = get_candles(figies[i], from_day, interval)
 
             # data_yfin = yfinance.download(ticker, start=from_day, interval='1d')
 
-            # stats = backtesting(data)
-            stats = backtesting_optimize(data, maximize=maximize_optimizer)
-
-            line = transform_stats(ticker=tickers[i], stats=stats, maximize=maximize_optimizer)
-
+            #Без оптимизатора
+            stats = backtesting(tickers[i], candels)
+            line = transform_stats(ticker=tickers[i], stats=stats, maximize=maximize_optimizer, interval=interval._name_)
             save_file(line)
+
+            # С оптимизатором
+            # stats = backtesting_optimize(tickers[i], candels, maximize=maximize_optimizer)
+            # line = transform_stats(ticker=tickers[i], stats=stats, maximize=maximize_optimizer, interval=interval._name_)
+            # save_file(line)
 
 
