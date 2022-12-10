@@ -1,3 +1,6 @@
+import datetime
+import time
+
 import matplotlib.pyplot as plt
 from Ichimoku import spanA, spanB, tenkan_Sen, kijun_Sen, chikou_Span
 import pandas as pd
@@ -7,13 +10,15 @@ import yfinance as yf
 import pandas_ta as ta
 
 
-class Monitor:
+class MonitoringTiker:
     tenkan_param = 9
     kijun_param = 26
     senkou_param = 52
 
-    def __init__(self, data: pd.DataFrame):
-        self.data = data
+    def __init__(self, tiker, position):
+        self.position = position
+        self.tiker = tiker
+        self.data = self.download_yf()
         ichimoku = self.get_ichimoku()
         self.span_A = ichimoku.iloc(axis=1)[0]
         self.span_B = ichimoku.iloc(axis=1)[1]
@@ -22,19 +27,23 @@ class Monitor:
         self.chikou_span = ichimoku.iloc(axis=1)[4]
 
     def signal_buy(self):
-        if self.data.Close[-1] > self.span_A[-1] > self.span_B[-1] and \
-                self.tenkan_sen[-1] > self.kijun_sen[-1] \
-                and self.chikou_span[-27] > self.data.High[-27]:
-            # self.buy()
-            print('BUY!!!')
+        if not self.position:
+            if self.data.Close[-1] > self.span_A[-1] > self.span_B[-1] and \
+                    self.tenkan_sen[-1] > self.kijun_sen[-1] \
+                    and self.chikou_span[-27] > self.data.High[-27]:
+                # self.buy()
+                self.position = True
+                return True
 
     def signal_sell(self):
-        if (self.data.Low[-1] < self.kijun_sen[-1] and self.tenkan_sen[-1] < self.kijun_sen[-1]) \
-                or self.data.Low[-1] < self.span_B[-1] \
-                or (self.data.Low[-1] < self.kijun_sen[-1] < self.tenkan_sen[-1] < self.data.Close[-2]):  # добавил - уменьшилась просадка
-            # and (self.data.Close[-1] < self.span_A[-1] or self.data.Close[-1] < self.span_B[-1]):
-            # self.position.close()
-            print("SELL!!!")
+        if self.position:
+            if (self.data.Low[-1] < self.kijun_sen[-1] and self.tenkan_sen[-1] < self.kijun_sen[-1]) \
+                    or self.data.Low[-1] < self.span_B[-1] \
+                    or (self.data.Low[-1] < self.kijun_sen[-1] < self.tenkan_sen[-1] < self.data.Close[-2]):  # добавил - уменьшилась просадка
+                # and (self.data.Close[-1] < self.span_A[-1] or self.data.Close[-1] < self.span_B[-1]):
+                # self.position.close()
+                self.position = False
+                return True
 
     def get_ichimoku(self):
         ichimoku = ta.ichimoku(self.data.High, self.data.Low, self.data.Close,
@@ -42,7 +51,7 @@ class Monitor:
         return ichimoku[0]
 
     def view(self):
-        df = pd.concat([self.data.Close, #self.data.iloc(axis=1)[:4],
+        df = pd.concat([self.data.Close,  # self.data.iloc(axis=1)[:4],
                         self.span_A,
                         self.span_B,
                         self.tenkan_sen,
@@ -51,14 +60,45 @@ class Monitor:
                        axis=1, join='inner')
         plt.plot(df)
         plt.show()
+        # print(df)
+
+    def tracking(self):
+        now = datetime.datetime.now().strftime('%H:%M:%S')
+
+        if self.signal_buy():
+            print(f'[+] {now} {self.tiker} Buy signal')
+
+        if self.signal_sell():
+            print(f'[-] {now} {self.tiker} Sell signal')
+
+        else:
+            print(f"{now} {self.tiker} Нет сигналов на сделку")
+
+    def download_yf(self, period='1mo', interval='1h'):
+        yf_tiker = yf.Ticker(self.tiker)
+        tiker_data = yf_tiker.history(period=period, interval=interval)
+        return tiker_data
 
 
 def main():
-    tiker = yf.Ticker("BABA")
-    tiker_data = tiker.history(period='1y', interval='1d')
-    ticker1 = Monitor(tiker_data)
-    ticker1.signal_buy()
-    # ticker1.view()
+    """
+    1 Перебираем словарь с позициями
+    2 Созд экземпляр класса
+    3 запускаем трекинг
+    4 обновляем позиции в словаре
+    5 задержка
+    """
+    positions = {'BABA': False, 'TAL': False, 'EBS': True}
+    delay = 10
+
+    while True:
+        for tiker, position in positions.items():
+            mon_tiker = MonitoringTiker(tiker, position)
+            mon_tiker.tracking()
+            positions[tiker] = mon_tiker.position
+
+        print(positions)
+        time.sleep(delay)
 
 
 if __name__ == '__main__':
