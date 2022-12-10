@@ -13,6 +13,7 @@ from datetime import timedelta
 
 def spanA(data, tenkan_param, kijun_param, senkou_param):
     # Data OHLCV
+    #что такое s?
     ichimoku = ta.ichimoku(data.High.s, data.Low.s, data.Close.s,
                            tenkan=tenkan_param, kijun=kijun_param, senkou=senkou_param)
     # print(ichimoku[0].to_numpy().T)
@@ -88,7 +89,7 @@ class Ichimoku_cross(Strategy):
         if self.position:
             if (self.data.Low[-1] < self.kijun_sen[-1] and self.tenkan_sen[-1] < self.kijun_sen[-1])\
                     or self.data.Low[-1] < self.span_B[-1] \
-                    or (self.data.Low[-1] < self.kijun_sen[-1] and self.tenkan_sen[-1] > self.kijun_sen[-1] and self.data.Close[-2] > self.tenkan_sen[-1]):  #добавил - уменьшилась просадка
+                    or (self.data.Low[-1] < self.kijun_sen[-1] < self.tenkan_sen[-1] < self.data.Close[-2]):  #добавил - уменьшилась просадка
                     # and (self.data.Close[-1] < self.span_A[-1] or self.data.Close[-1] < self.span_B[-1]):
                 self.position.close()
 
@@ -116,20 +117,20 @@ if __name__ == '__main__':
                                  kijun_param=range(20, 52, 1),
                                  senkou_param=range(52, 100, 1)
     """
-    # stats = bt.run()
-    # bt.plot()
-    # print(stats)
-    maximize = 'Return [%]'
-    stats, heatmap = bt.optimize(tenkan_param=range(8, 10, 1),
-                                 kijun_param=range(15, 17, 1),
-                                 senkou_param=range(60, 70, 1),
-                                 maximize=maximize, return_heatmap=True
-                                 )
-
-
+    stats = bt.run()
+    bt.plot()
     print(stats)
-    print(stats.tail())
-    print(stats._strategy)
-    print(heatmap)
-    bt.plot(plot_volume=True, plot_pl=True)
-    heatmap.plot()
+    maximize = 'Return [%]'
+    # stats, heatmap = bt.optimize(tenkan_param=range(8, 10, 1),
+    #                              kijun_param=range(15, 17, 1),
+    #                              senkou_param=range(60, 70, 1),
+    #                              maximize=maximize, return_heatmap=True
+    #                              )
+
+
+    # print(stats)
+    # print(stats.tail())
+    # print(stats._strategy)
+    # print(heatmap)
+    # bt.plot(plot_volume=True, plot_pl=True)
+    # heatmap.plot()
