@@ -124,7 +124,7 @@ def backtesting(ticker, tiker_data):
 
 
 def backtesting_optimize(ticker, tiker_data, maximize):
-    print(f'[+]Backtesting start')
+    print(f'[+]Backtesting optimize start')
     bt = Backtest(tiker_data, Ichimoku_cross, cash=10000, commission=.002, exclusive_orders=True)
     """
     Перебор этих значений займет 4ч:
@@ -217,10 +217,10 @@ if __name__ == "__main__":
 
             # data_yfin = yfinance.download(ticker, start=from_day, interval='1d')
 
-            #Без оптимизатора
-            # stats = backtesting(tickers[i], candels)
-            # line = transform_stats(ticker=tickers[i], stats=stats, maximize=maximize_optimizer, interval=interval._name_)
-            # save_file(line)
+            # Без оптимизатора
+            stats = backtesting(tickers[i], candels)
+            line = transform_stats(ticker=tickers[i], stats=stats, maximize=maximize_optimizer, interval=interval._name_)
+            save_file(line)
 
             #С оптимизатором
             stats = backtesting_optimize(tickers[i], candels, maximize=maximize_optimizer)
