@@ -108,7 +108,7 @@ def cast_money(v):
 
 
 def view_save_plot(ticker, stats, bt):
-    bt.plot(plot_volume=True, plot_pl=True, filename=f'data/{ticker}_{stats._strategy}'
+    bt.plot(plot_volume=True, plot_pl=True, filename=f'data/{ticker}_'
                                                      f'{stats._strategy.tenkan_param}-{stats._strategy.kijun_param}-'
                                                      f'{stats._strategy.senkou_param}')
 
@@ -138,7 +138,7 @@ def backtesting_optimize(ticker, tiker_data, maximize):
     #                              maximize=maximize, return_heatmap=True
     #                              )
 
-    stats, heatmap = bt.optimize(tenkan_param=range(8, 15, 1),
+    stats, heatmap = bt.optimize(tenkan_param=range(4, 15, 1),
                                  kijun_param=range(15, 35, 1),
                                  senkou_param=range(45, 80, 1),
                                  maximize=maximize, return_heatmap=True
@@ -148,6 +148,7 @@ def backtesting_optimize(ticker, tiker_data, maximize):
     # bt.plot()
     # print(stats)
 
+    print(ticker)
     print(stats)
     print(stats.tail())
     print(stats._strategy)
@@ -188,19 +189,19 @@ def save_file(line):
         f.write(line)
 
 def open_file_figies():
-    df_figies = pd.read_csv('Figi.csv')
+    df_figies = pd.read_csv('tiker_for_search.csv')
     return df_figies
 
 
 if __name__ == "__main__":
     # ['ES=F', "KWEB"]
     # ticker = 'SIBN'
-    tickers = ['USDRUB']  # open_file_figies().Name
-    figies = ['BBG0013HGFT4']  # open_file_figies().figi
-    interval = CandleInterval.CANDLE_INTERVAL_HOUR
+    tickers = open_file_figies().Name
+    figies = open_file_figies().figi
+    interval = CandleInterval.CANDLE_INTERVAL_DAY
 
     maximize_optimizer = 'Return [%]'
-    from_day = now() - timedelta(weeks=52*2)
+    from_day = now() - timedelta(weeks=52*12)
     # from_day = datetime(2006, 1, 1)
     # end_day = datetime(2015, 4, 30)
     # _plotting._MAX_CANDLES = 20_000             #тест избавления от ошибки
@@ -217,13 +218,13 @@ if __name__ == "__main__":
             # data_yfin = yfinance.download(ticker, start=from_day, interval='1d')
 
             #Без оптимизатора
-            stats = backtesting(tickers[i], candels)
-            line = transform_stats(ticker=tickers[i], stats=stats, maximize=maximize_optimizer, interval=interval._name_)
-            save_file(line)
-
-            # С оптимизатором
-            # stats = backtesting_optimize(tickers[i], candels, maximize=maximize_optimizer)
+            # stats = backtesting(tickers[i], candels)
             # line = transform_stats(ticker=tickers[i], stats=stats, maximize=maximize_optimizer, interval=interval._name_)
             # save_file(line)
+
+            #С оптимизатором
+            stats = backtesting_optimize(tickers[i], candels, maximize=maximize_optimizer)
+            line = transform_stats(ticker=tickers[i], stats=stats, maximize=maximize_optimizer, interval=interval._name_)
+            save_file(line)
 
 
