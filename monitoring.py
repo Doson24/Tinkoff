@@ -1,4 +1,5 @@
 import datetime
+import json
 import time
 
 import matplotlib.pyplot as plt
@@ -11,11 +12,14 @@ import pandas_ta as ta
 
 
 class MonitoringTiker:
-    tenkan_param = 9
-    kijun_param = 26
-    senkou_param = 52
+    # tenkan_param = 9
+    # kijun_param = 26
+    # senkou_param = 52
 
-    def __init__(self, tiker, position):
+    def __init__(self, tiker, position, tenkan_param, kijun_param, senkou_param):
+        self.tenkan_param = int(tenkan_param)
+        self.kijun_param = int(kijun_param)
+        self.senkou_param = int(senkou_param)
         self.position = position
         self.tiker = tiker
         self.data = self.download_yf()
@@ -34,6 +38,7 @@ class MonitoringTiker:
                 # self.buy()
                 self.position = True
                 return True
+        # else: return False
 
     def signal_sell(self):
         if self.position:
@@ -44,6 +49,7 @@ class MonitoringTiker:
                 # self.position.close()
                 self.position = False
                 return True
+        # else:return False
 
     def get_ichimoku(self):
         ichimoku = ta.ichimoku(self.data.High, self.data.Low, self.data.Close,
@@ -51,7 +57,8 @@ class MonitoringTiker:
         return ichimoku[0]
 
     def view(self):
-        df = pd.concat([self.data.Close,  # self.data.iloc(axis=1)[:4],
+        df = pd.concat([self.data.Low,
+                        self.data.Close,  # self.data.iloc(axis=1)[:4],
                         self.span_A,
                         self.span_B,
                         self.tenkan_sen,
@@ -59,6 +66,7 @@ class MonitoringTiker:
                         self.chikou_span],
                        axis=1, join='inner')
         plt.plot(df)
+        plt.legend(df.columns)
         plt.show()
         # print(df)
 
@@ -68,7 +76,7 @@ class MonitoringTiker:
         if self.signal_buy():
             print(f'[+] {now} {self.tiker} Buy signal')
 
-        if self.signal_sell():
+        elif self.signal_sell():
             print(f'[-] {now} {self.tiker} Sell signal')
 
         else:
@@ -82,23 +90,37 @@ class MonitoringTiker:
 
 def main():
     """
-    1 Перебираем словарь с позициями
-    2 Созд экземпляр класса
+    1 Созд список с экземплярами класса
+    2 Перебираем словарь с экземплярами
     3 запускаем трекинг
     4 обновляем позиции в словаре
     5 задержка
     """
-    positions = {'BABA': False, 'TAL': False, 'EBS': True}
+    # positions = {'BABA': {'position': False, 'settings': [9, 26, 52]},
+    #              'TAL': {'position': True, 'settings': []},
+    #              'EBS': {'position': True, 'settings': []},
+    #              }
+
+    with open('settings.json', 'r', encoding='utf8') as f:
+        positions = json.load(f)
+
     delay = 10
 
-    while True:
-        for tiker, position in positions.items():
-            mon_tiker = MonitoringTiker(tiker, position)
-            mon_tiker.tracking()
-            positions[tiker] = mon_tiker.position
+    list_obj = []
+    for tiker, param in positions.items():
+        mon_tiker = MonitoringTiker(tiker, param['position'], param['settings'][0], param['settings'][1], param['settings'][2])
+        list_obj.append(mon_tiker)
 
+    try:
+        while True:
+            for obj in list_obj:
+                obj.tracking()
+                positions[obj.tiker] = obj.position
+            print('_'*45)
+            time.sleep(delay)
+    except KeyboardInterrupt:
         print(positions)
-        time.sleep(delay)
+        # list_obj[2].view()
 
 
 if __name__ == '__main__':
