@@ -95,8 +95,8 @@ class Ichimoku_cross(Strategy):
 
         else:
             if self.data.Close[-1] > self.span_A[-1] > self.span_B[-1] and \
-                    self.tenkan_sen[-1] > self.kijun_sen[-1] \
-                    and self.chikou_span[-1] > self.data.High[-26]:
+                    self.data.Close[-1] > self.tenkan_sen[-1] > self.kijun_sen[-1] and \
+                    self.chikou_span[-1] > self.data.High[-26]:
                 self.buy()
                 # self.buy(sl=self.span_B[-1])
 
