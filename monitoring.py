@@ -101,9 +101,10 @@ def main():
     #              'EBS': {'position': True, 'settings': []},
     #              }
 
-    with open('settings.json', 'r', encoding='utf8') as f:
-        positions = json.load(f)
+    with open('settings_track.json', 'r', encoding='utf8') as f:
+        moex_positions = json.load(f)
 
+    positions = moex_positions
     delay = 10
 
     list_obj = []
