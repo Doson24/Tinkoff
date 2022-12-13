@@ -6,11 +6,10 @@ from pandas import DataFrame
 from tinkoff.invest import Client, InstrumentStatus, SharesResponse, InstrumentIdType
 from tinkoff.invest.services import InstrumentsService, MarketDataService
 
-
 TOKEN = os.environ["TOKEN_test"]
 
-
 CONTRACT_PREFIX = "tinkoff.public.invest.api.contract.v1."
+
 
 def run(ticker):
     with Client(TOKEN) as cl:
@@ -21,7 +20,7 @@ def run(ticker):
         # print(r)
 
         l = []
-        for method in ['shares', ]:#'bonds', 'etfs', 'currencies', 'futures']:
+        for method in ['shares', ]:  # 'bonds', 'etfs', 'currencies', 'futures']:
             for item in getattr(instruments, method)().instruments:
                 l.append({
                     'ticker': item.ticker,
@@ -49,6 +48,7 @@ def get_limits():
             print(unary_limit.limit_per_minute, "запросов в минуту для:")
             print("\t" + "\n\t".join(methods))
 
+
 def get_figies(ticker: str) -> list:
     with Client(TOKEN) as cl:
         # Поиск figi по названию
@@ -57,7 +57,7 @@ def get_figies(ticker: str) -> list:
         return r.instruments
 
 
-if __name__ == '__main__':
+def run_search():
     tickers = ['BABA', 'VIPS', 'TAL', 'EBS', 'AT&T', 'KO']
 
     # tickers = ['USD']
@@ -67,3 +67,7 @@ if __name__ == '__main__':
         data = get_figies(ticker)
         for i in range(len(data)):
             print(ticker, data[i].ticker, data[i].figi)
+
+
+if __name__ == '__main__':
+    get_limits()

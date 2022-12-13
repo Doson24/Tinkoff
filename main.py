@@ -108,9 +108,12 @@ def cast_money(v):
 
 
 def view_save_plot(ticker, stats, bt):
-    bt.plot(plot_volume=True, plot_pl=True, filename=f'data/{ticker}_'
+    try:
+        bt.plot(plot_volume=True, plot_pl=True, filename=f'data/{ticker}_'
                                                      f'{stats._strategy.tenkan_param}-{stats._strategy.kijun_param}-'
                                                      f'{stats._strategy.senkou_param}')
+    except Exception as ex:
+        print('ERORR', '-'*180)
 
 
 def backtesting(ticker, tiker_data):
@@ -119,7 +122,7 @@ def backtesting(ticker, tiker_data):
 
     stats = bt.run()
     view_save_plot(ticker, stats, bt)
-    print(stats)
+    # print(stats)
     return stats
 
 
@@ -148,10 +151,10 @@ def backtesting_optimize(ticker, tiker_data, maximize):
     # bt.plot()
     # print(stats)
 
-    print(ticker)
-    print(stats)
-    print(stats.tail())
-    print(stats._strategy)
+    # print(ticker)
+    # print(stats)
+    # print(stats.tail())
+    # print(stats._strategy)
     # print(heatmap)
     view_save_plot(ticker, stats, bt)
     # heatmap.plot()
