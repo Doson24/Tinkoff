@@ -1,5 +1,6 @@
 import math
 import os
+import time
 
 import pandas as pd
 import pytz
@@ -16,7 +17,7 @@ import yfinance
 from backtesting import _plotting
 
 
-def get_candles(figi: str, from_day: datetime, interval=CandleInterval.CANDLE_INTERVAL_DAY) -> DataFrame:
+def get_candles(figi: str, from_day: datetime, until_day: datetime = now(), interval=CandleInterval.CANDLE_INTERVAL_DAY) -> DataFrame:
     # instruments: InstrumentsService = client.instruments
     # market_data: MarketDataService = client.market_data
 
@@ -53,7 +54,7 @@ def get_candles(figi: str, from_day: datetime, interval=CandleInterval.CANDLE_IN
     c = client.get_all_candles(
         figi=figi,
         from_=from_day,
-        to=now(),
+        to=until_day,
         interval=interval, )
 
     return create_df(c)
@@ -124,7 +125,7 @@ def backtesting(ticker, tiker_data):
 
 
 def backtesting_optimize(ticker, tiker_data, maximize):
-    print(f'[+]Backtesting optimize start')
+    print(f'[+]Backtesting optimize start {now() + timedelta(hours=7)}')
     bt = Backtest(tiker_data, Ichimoku_cross, cash=10000, commission=.002, exclusive_orders=True)
     """
     Перебор этих значений займет 4ч:
@@ -214,24 +215,37 @@ def train_param(candels):
     # kijun_optimaze = stats_full._strategy.kijun_param
     # senkou_optimaze = stats_full._strategy.senkou_param
     #
-    print(f'{tenkan} - {kijun} - {senkou}')
-    print(f'{tenkan_optimaze} - {kijun_optimaze} - {senkou_optimaze}')
+    # print(f'{tenkan} - {kijun} - {senkou}')
+    # print(f'{tenkan_optimaze} - {kijun_optimaze} - {senkou_optimaze}')
     """END"""
+
+
+def concat_candels():
+    from_day = [now() - timedelta(weeks=52), now() - timedelta(weeks=52 * 2), now() - timedelta(weeks=52 * 3)]
+    until_Day = [now(), from_day[0], from_day[1]]
+    sum_candels = pd.DataFrame()
+    for num in range(len(from_day)):
+        candels = get_candles(figies[i], from_day=from_day[num], until_day=until_Day[num], interval=interval)
+        sum_candels = pd.concat([sum_candels, candels])
+        time.sleep(3)
+    return sum_candels
 
 
 if __name__ == "__main__":
     # CONTRACT_PREFIX = "tinkoff.public.invest.api.contract.v1."
     TOKEN = os.environ["TOKEN_test"]
-
+    # BABA, BBG006G2JVL2
+    # TCSG, BBG00QPYJ5H0
     # ['ES=F', "KWEB"]
-    tickers = ['SBER']
-    figies = ['BBG004730N88']
-    # tickers = open_file_figies().Name
-    # figies = open_file_figies().figi
-    interval = CandleInterval.CANDLE_INTERVAL_DAY
+    # tickers = ['BABA']
+    # figies = ['BBG006G2JVL2']
 
+    tickers = open_file_figies().Name
+    figies = open_file_figies().figi
+
+    interval = CandleInterval.CANDLE_INTERVAL_HOUR
     maximize_optimizer = 'Return [%]'
-    from_day = now() - timedelta(weeks=52 * 12)
+    from_day = now() - timedelta(weeks=52)
     # from_day = datetime(2006, 1, 1)
     # end_day = datetime(2015, 4, 30)
     # _plotting._MAX_CANDLES = 20_000             #тест избавления от ошибки
@@ -243,8 +257,9 @@ if __name__ == "__main__":
         # print(figi)
 
         for i in range(len(tickers)):
-            candels = get_candles(figies[i], from_day, interval)
-
+            #Список интервалов по 1 году
+            candels = concat_candels()
+            # candels = get_candles(figies[i], from_day=from_day, interval=interval)
             # data_yfin = yfinance.download(ticker, start=from_day, interval='1d')
 
             # Без оптимизатора
@@ -253,8 +268,8 @@ if __name__ == "__main__":
             # save_file(line)
 
             # С оптимизатором
-            # stats = backtesting_optimize(tickers[i], candels, maximize=maximize_optimizer)
-            # line = transform_stats(ticker=tickers[i], stats=stats, maximize=maximize_optimizer, interval=interval._name_)
-            # save_file(line)
+            stats = backtesting_optimize(tickers[i], candels, maximize=maximize_optimizer)
+            line = transform_stats(ticker=tickers[i], stats=stats, maximize=maximize_optimizer, interval=interval._name_)
+            save_file(line)
 
-            train_param(candels)
+            # train_param(candels)
