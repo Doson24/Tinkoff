@@ -1,3 +1,4 @@
+import math
 import os
 
 import pandas as pd
@@ -13,11 +14,6 @@ from yfinance import ticker
 from Ichimoku import Ichimoku_cross
 import yfinance
 from backtesting import _plotting
-
-# CONTRACT_PREFIX = "tinkoff.public.invest.api.contract.v1."
-
-
-TOKEN = os.environ["TOKEN_test"]
 
 
 def get_candles(figi: str, from_day: datetime, interval=CandleInterval.CANDLE_INTERVAL_DAY) -> DataFrame:
@@ -98,6 +94,7 @@ def get_tiker(instruments):
     df = DataFrame(l)
     return df
 
+
 def cast_money(v):
     """
     https://tinkoff.github.io/investAPI/faq_custom_types/
@@ -110,10 +107,10 @@ def cast_money(v):
 def view_save_plot(ticker, stats, bt):
     try:
         bt.plot(plot_volume=True, plot_pl=True, filename=f'data/{ticker}_'
-                                                     f'{stats._strategy.tenkan_param}-{stats._strategy.kijun_param}-'
-                                                     f'{stats._strategy.senkou_param}')
+                                                         f'{stats._strategy.tenkan_param}-{stats._strategy.kijun_param}-'
+                                                         f'{stats._strategy.senkou_param}')
     except Exception as ex:
-        print('ERORR', '-'*180)
+        print('ERORR', '-' * 180)
 
 
 def backtesting(ticker, tiker_data):
@@ -169,7 +166,7 @@ def transform_stats(ticker: str, maximize: str, stats, interval: str) -> str:
     :return:
     """
     stats_dict = stats.to_dict()
-    column_stats = list(stats_dict.keys())[:27]                             #статистика до SQN
+    column_stats = list(stats_dict.keys())[:27]  # статистика до SQN
     filter_stats_dict = {key: stats_dict.get(key) for key in column_stats}
     # stats_df = pd.DataFrame([filter_stats_dict])
     stats_str = [str(i) for i in list(filter_stats_dict.values())]
@@ -191,20 +188,50 @@ def save_file(line):
     with open('stats.csv', 'a') as f:
         f.write(line)
 
+
 def open_file_figies():
     df_figies = pd.read_csv('tiker_for_search.csv')
     return df_figies
 
 
+def train_param(candels):
+    # """Тест на 70% данных"""
+    size_train = 0.80
+    size_end = 0.90
+
+    # train_candels = candels[:math.floor(len(candels) * size_train)]
+    train_end = candels[:math.floor(len(candels) * size_end)]
+
+    # stats = backtesting_optimize(tickers[i], train_candels, maximize=maximize_optimizer)
+    # stats_full = backtesting_optimize(tickers[i], train_end, maximize=maximize_optimizer)
+
+    stats = backtesting(tickers[i], train_end)
+    # tenkan = stats._strategy.tenkan_param
+    # kijun = stats._strategy.kijun_param
+    # senkou = stats._strategy.senkou_param
+
+    # tenkan_optimaze = stats_full._strategy.tenkan_param
+    # kijun_optimaze = stats_full._strategy.kijun_param
+    # senkou_optimaze = stats_full._strategy.senkou_param
+    #
+    print(f'{tenkan} - {kijun} - {senkou}')
+    print(f'{tenkan_optimaze} - {kijun_optimaze} - {senkou_optimaze}')
+    """END"""
+
+
 if __name__ == "__main__":
+    # CONTRACT_PREFIX = "tinkoff.public.invest.api.contract.v1."
+    TOKEN = os.environ["TOKEN_test"]
+
     # ['ES=F', "KWEB"]
-    # ticker = 'SIBN'
-    tickers = open_file_figies().Name
-    figies = open_file_figies().figi
+    tickers = ['SBER']
+    figies = ['BBG004730N88']
+    # tickers = open_file_figies().Name
+    # figies = open_file_figies().figi
     interval = CandleInterval.CANDLE_INTERVAL_DAY
 
     maximize_optimizer = 'Return [%]'
-    from_day = now() - timedelta(weeks=52*12)
+    from_day = now() - timedelta(weeks=52 * 12)
     # from_day = datetime(2006, 1, 1)
     # end_day = datetime(2015, 4, 30)
     # _plotting._MAX_CANDLES = 20_000             #тест избавления от ошибки
@@ -221,13 +248,13 @@ if __name__ == "__main__":
             # data_yfin = yfinance.download(ticker, start=from_day, interval='1d')
 
             # Без оптимизатора
-            stats = backtesting(tickers[i], candels)
-            line = transform_stats(ticker=tickers[i], stats=stats, maximize=maximize_optimizer, interval=interval._name_)
-            save_file(line)
+            # stats = backtesting(tickers[i], candels)
+            # line = transform_stats(ticker=tickers[i], stats=stats, maximize=maximize_optimizer, interval=interval._name_)
+            # save_file(line)
 
-            #С оптимизатором
-            stats = backtesting_optimize(tickers[i], candels, maximize=maximize_optimizer)
-            line = transform_stats(ticker=tickers[i], stats=stats, maximize=maximize_optimizer, interval=interval._name_)
-            save_file(line)
+            # С оптимизатором
+            # stats = backtesting_optimize(tickers[i], candels, maximize=maximize_optimizer)
+            # line = transform_stats(ticker=tickers[i], stats=stats, maximize=maximize_optimizer, interval=interval._name_)
+            # save_file(line)
 
-
+            train_param(candels)
