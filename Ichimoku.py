@@ -49,9 +49,9 @@ def chikou_Span(data, tenkan_param, kijun_param, senkou_param):
 
 
 class Ichimoku_cross(Strategy):
-    tenkan_param = 9
-    kijun_param = 26
-    senkou_param = 52
+    tenkan_param = 7
+    kijun_param = 22
+    senkou_param = 72
 
     def init(self):
         """Ichimoku attributes"""
