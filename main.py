@@ -17,47 +17,6 @@ import yfinance
 from backtesting import _plotting
 
 
-def get_candles(figi: str, from_day: datetime, until_day: datetime = now(), interval=CandleInterval.CANDLE_INTERVAL_DAY) -> DataFrame:
-    # instruments: InstrumentsService = client.instruments
-    # market_data: MarketDataService = client.market_data
-
-    # accounts = client.users.get_accounts()
-    # print("\nСписок текущих аккаунтов\n")
-    # for account in accounts.accounts:
-    #     print("\t", account.id, account.name, account.access_level.name)
-    #
-    # print("\nТекущие лимиты\n")
-    # tariff = client.users.get_user_tariff()
-    # for unary_limit in tariff.unary_limits:
-    #     methods = [m.replace(CONTRACT_PREFIX, "") for m in unary_limit.methods]
-    #     print(unary_limit.limit_per_minute, "запросов в минуту для:")
-    #     print("\t" + "\n\t".join(methods))
-    #
-    # for stream_limit in tariff.stream_limits:
-    #     print(stream_limit.limit, "коннект(а/ов) для:")
-    #     streams = [s.replace(CONTRACT_PREFIX, "") for s in stream_limit.streams]
-    #     print("\t" + "\n\t".join(streams))
-    #
-    # print("\nИнформация\n")
-    # info = client.users.get_info()
-    # print(info)
-
-    # При работе через market_data установлены лимиты (интервал 1H, период 365 - выдает ошибку)
-    # c = client.market_data.get_candles(
-    #         figi="BBG00QPYJ5H0",
-    #         from_=now() - timedelta(days=365),
-    #         to=now(),
-    #         interval=CandleInterval.CANDLE_INTERVAL_HOUR,
-    # )
-
-    # Нет ошибок
-    c = client.get_all_candles(
-        figi=figi,
-        from_=from_day,
-        to=until_day,
-        interval=interval, )
-
-    return create_df(c)
 
 
 def get_figies(ticker: str) -> list:
@@ -66,19 +25,6 @@ def get_figies(ticker: str) -> list:
     # return [i.figi for i in r.instruments]
     return r.instruments
 
-
-def create_df(candles: [HistoricCandle]) -> DataFrame:
-    df = DataFrame([{
-        'time': c.time,
-        'Volume': c.volume,
-        'Open': cast_money(c.open),
-        'Close': cast_money(c.close),
-        'High': cast_money(c.high),
-        'Low': cast_money(c.low),
-    } for c in candles])
-    df.index = df.time
-    print(f'[+] Get all candles ')
-    return df
 
 
 def get_tiker(instruments):
@@ -96,13 +42,182 @@ def get_tiker(instruments):
     return df
 
 
-def cast_money(v):
+
+
+
+
+
+
+def transform_stats(ticker: str, maximize: str, stats, interval: str) -> str:
     """
-    https://tinkoff.github.io/investAPI/faq_custom_types/
-    :param v:
+    :param ticker:
+    :param maximize:
+    :param stats:
     :return:
     """
-    return v.units + v.nano / 1e9  # nano - 9 нулей
+    stats_dict = stats.to_dict()
+    column_stats = list(stats_dict.keys())[:27]  # статистика до SQN
+    filter_stats_dict = {key: stats_dict.get(key) for key in column_stats}
+    # stats_df = pd.DataFrame([filter_stats_dict])
+    stats_str = [str(i) for i in list(filter_stats_dict.values())]
+
+    tenkan_optimaze = stats._strategy.tenkan_param
+    kijun_optimaze = stats._strategy.kijun_param
+    senkou_optimaze = stats._strategy.senkou_param
+
+    stats_str.insert(0, str(senkou_optimaze))
+    stats_str.insert(0, str(kijun_optimaze))
+    stats_str.insert(0, str(tenkan_optimaze))
+    stats_str.append(maximize)
+    stats_str.append(interval)
+    stats_str.insert(0, ticker)
+    return ', '.join(stats_str) + '\n'
+
+
+
+def open_file_figies():
+    df_figies = pd.read_csv('tiker_for_search.csv')
+    return df_figies
+
+
+def train_param(candels):
+    # """Тест на 70% данных"""
+    size_train = 0.80
+    size_end = 0.90
+
+    # train_candels = candels[:math.floor(len(candels) * size_train)]
+    train_end = candels[:math.floor(len(candels) * size_end)]
+
+    # stats = backtesting_optimize(tickers[i], train_candels, maximize=maximize_optimizer)
+    # stats_full = backtesting_optimize(tickers[i], train_end, maximize=maximize_optimizer)
+
+    # stats = backtesting(tickers[i], train_end)
+    # tenkan = stats._strategy.tenkan_param
+    # kijun = stats._strategy.kijun_param
+    # senkou = stats._strategy.senkou_param
+
+    # tenkan_optimaze = stats_full._strategy.tenkan_param
+    # kijun_optimaze = stats_full._strategy.kijun_param
+    # senkou_optimaze = stats_full._strategy.senkou_param
+    #
+    # print(f'{tenkan} - {kijun} - {senkou}')
+    # print(f'{tenkan_optimaze} - {kijun_optimaze} - {senkou_optimaze}')
+    """END"""
+
+
+
+
+class Ticker:
+    maximize_optimizer = 'Return [%]'
+
+    def __init__(self, name: str, figi: str,
+                 client_tinkoff,
+                 from_day: datetime, until_day: datetime = now(),
+                 ):
+        self.name = name
+        self.figi = figi
+        self.interval = CandleInterval.CANDLE_INTERVAL_HOUR
+        self.from_day = from_day
+        self.until_day = until_day
+        self.client = client_tinkoff
+        self.candels = self.download_candles(self.client, self.figi, self.from_day, self.until_day, self.interval)
+        self.ohlc = self.create_df(self.candels)
+        self.stats = None
+
+    @staticmethod
+    def download_candles(client, figi, from_day, until_day, interval) -> [HistoricCandle]:
+        # instruments: InstrumentsService = client.instruments
+        # market_data: MarketDataService = client.market_data
+
+        # accounts = client.users.get_accounts()
+        # print("\nСписок текущих аккаунтов\n")
+        # for account in accounts.accounts:
+        #     print("\t", account.id, account.name, account.access_level.name)
+        #
+        # print("\nТекущие лимиты\n")
+        # tariff = client.users.get_user_tariff()
+        # for unary_limit in tariff.unary_limits:
+        #     methods = [m.replace(CONTRACT_PREFIX, "") for m in unary_limit.methods]
+        #     print(unary_limit.limit_per_minute, "запросов в минуту для:")
+        #     print("\t" + "\n\t".join(methods))
+        #
+        # for stream_limit in tariff.stream_limits:
+        #     print(stream_limit.limit, "коннект(а/ов) для:")
+        #     streams = [s.replace(CONTRACT_PREFIX, "") for s in stream_limit.streams]
+        #     print("\t" + "\n\t".join(streams))
+        #
+        # print("\nИнформация\n")
+        # info = client.users.get_info()
+        # print(info)
+
+        # При работе через market_data установлены лимиты (интервал 1H, период 365 - выдает ошибку)
+        # c = client.market_data.get_candles(
+        #         figi="BBG00QPYJ5H0",
+        #         from_=now() - timedelta(days=365),
+        #         to=now(),
+        #         interval=CandleInterval.CANDLE_INTERVAL_HOUR,
+        # )
+
+        # Нет ошибок
+        candels = client.get_all_candles(
+            figi=figi,
+            from_=from_day,
+            to=until_day,
+            interval=interval, )
+
+        return candels
+
+    def create_df(self, candles: [HistoricCandle]) -> DataFrame:
+        df = DataFrame([{
+            'time': c.time,
+            'Volume': c.volume,
+            'Open': self.cast_money(c.open),
+            'Close': self.cast_money(c.close),
+            'High': self.cast_money(c.high),
+            'Low': self.cast_money(c.low),
+        } for c in candles])
+        df.index = df.time
+        print(f'[+] Get all candles ')
+        return df
+
+    # def view_save_plot(self, bt):
+    #     try:
+    #         bt.plot(plot_volume=True, plot_pl=True, filename=
+    #                                          f'data/{self.name}_'
+    #                                          f'{self.stats._strategy.tenkan_param}-{self.stats._strategy.kijun_param}-'
+    #                                          f'{self.stats._strategy.senkou_param}')
+    #     except Exception as ex:
+    #         print('ERORR', '-' * 180)
+
+    def dowload_ohlc_3years(self):
+        from_day = [now() - timedelta(weeks=52), now() - timedelta(weeks=52 * 2), now() - timedelta(weeks=52 * 3)]
+        until_day = [now(), from_day[0], from_day[1]]
+        sum_candels = pd.DataFrame()
+        for num in range(len(from_day)):
+            try:
+                candels = self.download_candles(client=self.client, figi=self.figi,
+                                                from_day=from_day[num], until_day=until_day[num],
+                                                interval=self.interval, )
+                candels = self.create_df(candels)
+                sum_candels = pd.concat([sum_candels, candels])
+                time.sleep(3)
+            except AttributeError:
+                print('[-] Нет данных')
+        return sum_candels
+
+    @staticmethod
+    def cast_money(v):
+        """
+        https://tinkoff.github.io/investAPI/faq_custom_types/
+        :param v:
+        :return:
+        """
+        return v.units + v.nano / 1e9  # nano - 9 нулей
+
+    @staticmethod
+    def save_file(line):
+        with open('stats.csv', 'a') as f:
+            f.write(line)
 
 
 def view_save_plot(ticker, stats, bt):
@@ -159,83 +274,9 @@ def backtesting_optimize(ticker, tiker_data, maximize):
     return stats
 
 
-def transform_stats(ticker: str, maximize: str, stats, interval: str) -> str:
-    """
-    :param ticker:
-    :param maximize:
-    :param stats:
-    :return:
-    """
-    stats_dict = stats.to_dict()
-    column_stats = list(stats_dict.keys())[:27]  # статистика до SQN
-    filter_stats_dict = {key: stats_dict.get(key) for key in column_stats}
-    # stats_df = pd.DataFrame([filter_stats_dict])
-    stats_str = [str(i) for i in list(filter_stats_dict.values())]
-
-    tenkan_optimaze = stats._strategy.tenkan_param
-    kijun_optimaze = stats._strategy.kijun_param
-    senkou_optimaze = stats._strategy.senkou_param
-
-    stats_str.insert(0, str(senkou_optimaze))
-    stats_str.insert(0, str(kijun_optimaze))
-    stats_str.insert(0, str(tenkan_optimaze))
-    stats_str.append(maximize)
-    stats_str.append(interval)
-    stats_str.insert(0, ticker)
-    return ', '.join(stats_str) + '\n'
-
-
-def save_file(line):
-    with open('stats.csv', 'a') as f:
-        f.write(line)
-
-
-def open_file_figies():
-    df_figies = pd.read_csv('tiker_for_search.csv')
-    return df_figies
-
-
-def train_param(candels):
-    # """Тест на 70% данных"""
-    size_train = 0.80
-    size_end = 0.90
-
-    # train_candels = candels[:math.floor(len(candels) * size_train)]
-    train_end = candels[:math.floor(len(candels) * size_end)]
-
-    # stats = backtesting_optimize(tickers[i], train_candels, maximize=maximize_optimizer)
-    # stats_full = backtesting_optimize(tickers[i], train_end, maximize=maximize_optimizer)
-
-    stats = backtesting(tickers[i], train_end)
-    # tenkan = stats._strategy.tenkan_param
-    # kijun = stats._strategy.kijun_param
-    # senkou = stats._strategy.senkou_param
-
-    # tenkan_optimaze = stats_full._strategy.tenkan_param
-    # kijun_optimaze = stats_full._strategy.kijun_param
-    # senkou_optimaze = stats_full._strategy.senkou_param
-    #
-    # print(f'{tenkan} - {kijun} - {senkou}')
-    # print(f'{tenkan_optimaze} - {kijun_optimaze} - {senkou_optimaze}')
-    """END"""
-
-
-def concat_candels():
-    from_day = [now() - timedelta(weeks=52), now() - timedelta(weeks=52 * 2), now() - timedelta(weeks=52 * 3)]
-    until_Day = [now(), from_day[0], from_day[1]]
-    sum_candels = pd.DataFrame()
-    for num in range(len(from_day)):
-        candels = get_candles(figies[i], from_day=from_day[num], until_day=until_Day[num], interval=interval)
-        sum_candels = pd.concat([sum_candels, candels])
-        time.sleep(3)
-    return sum_candels
-
-
 if __name__ == "__main__":
     # CONTRACT_PREFIX = "tinkoff.public.invest.api.contract.v1."
     TOKEN = os.environ["TOKEN_test"]
-    # BABA, BBG006G2JVL2
-    # TCSG, BBG00QPYJ5H0
     # ['ES=F', "KWEB"]
     # tickers = ['BABA']
     # figies = ['BBG006G2JVL2']
@@ -251,14 +292,10 @@ if __name__ == "__main__":
     # _plotting._MAX_CANDLES = 20_000             #тест избавления от ошибки
 
     with Client(TOKEN) as client:
-        # for i in get_figies(ticker):
-        #     print(i.name)
-        # figi = get_figies(ticker)[0].figi
-        # print(figi)
 
         for i in range(len(tickers)):
             #Список интервалов по 1 году
-            candels = concat_candels()
+            # candels = concat_candels()
             # candels = get_candles(figies[i], from_day=from_day, interval=interval)
             # data_yfin = yfinance.download(ticker, start=from_day, interval='1d')
 
@@ -268,8 +305,18 @@ if __name__ == "__main__":
             # save_file(line)
 
             # С оптимизатором
-            stats = backtesting_optimize(tickers[i], candels, maximize=maximize_optimizer)
-            line = transform_stats(ticker=tickers[i], stats=stats, maximize=maximize_optimizer, interval=interval._name_)
-            save_file(line)
+            # stats = backtesting_optimize(tickers[i], candels, maximize=maximize_optimizer)
+            # line = transform_stats(ticker=tickers[i], stats=stats, maximize=maximize_optimizer, interval=interval._name_)
+            # save_file(line)
 
             # train_param(candels)
+
+            """Тест работы с помощью класса"""
+            ticker = Ticker(name=tickers[i], figi=figies[i], client_tinkoff=client, from_day=from_day)
+            # candels = ticker.dowload_ohlc_3years()
+            candels = ticker.ohlc
+            # Без оптимизатора
+            stats = backtesting(tickers[i], candels)
+            line = transform_stats(ticker=tickers[i], stats=stats, maximize=maximize_optimizer, interval=interval._name_)
+            Ticker.save_file(line)
+
