@@ -1,0 +1,83 @@
+{
+      "BABA": {
+            "position": false,
+            "settings": [
+                  "9",
+                  "26",
+                  "52"
+            ],
+            "interval": "CANDLE_INTERVAL_DAY"
+      },
+      "EBS": {
+            "position": false,
+            "settings": [
+                  "9",
+                  "26",
+                  "52"
+            ],
+            "interval": "CANDLE_INTERVAL_DAY"
+      },
+      "FLOT": {
+            "position": false,
+            "settings": [
+                  "9",
+                  "26",
+                  "52"
+            ],
+            "interval": "CANDLE_INTERVAL_DAY"
+      },
+      "GMKN": {
+            "position": false,
+            "settings": [
+                  "6",
+                  "26",
+                  "67"
+            ],
+            "interval": "CANDLE_INTERVAL_DAY"
+      },
+      "KO": {
+            "position": false,
+            "settings": [
+                  "9",
+                  "26",
+                  "52"
+            ],
+            "interval": "CANDLE_INTERVAL_DAY"
+      },
+      "T": {
+            "position": false,
+            "settings": [
+                  "9",
+                  "26",
+                  "52"
+            ],
+            "interval": "CANDLE_INTERVAL_DAY"
+      },
+      "TAL": {
+            "position": false,
+            "settings": [
+                  "9",
+                  "26",
+                  "52"
+            ],
+            "interval": "CANDLE_INTERVAL_DAY"
+      },
+      "VIPS": {
+            "position": false,
+            "settings": [
+                  "9",
+                  "26",
+                  "52"
+            ],
+            "interval": "CANDLE_INTERVAL_DAY"
+      },
+      "VTBR": {
+            "position": false,
+            "settings": [
+                  "9",
+                  "26",
+                  "52"
+            ],
+            "interval": "CANDLE_INTERVAL_DAY"
+      }
+}
