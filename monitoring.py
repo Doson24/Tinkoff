@@ -30,6 +30,15 @@ class MonitoringTiker:
         self.kijun_sen = ichimoku.iloc(axis=1)[3]
         self.chikou_span = ichimoku.iloc(axis=1)[4]
 
+    def update_data(self):
+        self.data = self.download_yf()
+        ichimoku = self.get_ichimoku()
+        self.span_A = ichimoku.iloc(axis=1)[0]
+        self.span_B = ichimoku.iloc(axis=1)[1]
+        self.tenkan_sen = ichimoku.iloc(axis=1)[2]
+        self.kijun_sen = ichimoku.iloc(axis=1)[3]
+        self.chikou_span = ichimoku.iloc(axis=1)[4]
+
     def signal_buy(self):
         if not self.position:
             if self.data.Close[-1] > self.span_A[-1] > self.span_B[-1] and \
@@ -105,11 +114,11 @@ def main():
     with open('settings_track.json', 'r', encoding='utf8') as f:
         moex_positions = json.load(f)
 
-    positions = moex_positions
+    settings_tickers = moex_positions
     delay = 10
 
     list_obj = []
-    for tiker, param in positions.items():
+    for tiker, param in settings_tickers.items():
         mon_tiker = MonitoringTiker(tiker,
                                     position=param['position'],
                                     tenkan_param=param['settings'][0],
@@ -119,15 +128,16 @@ def main():
 
     try:
         while True:
-            for obj in list_obj[0:1]:
-                obj.data = obj.download_yf()
+            for count, obj in enumerate(list_obj[0:1]):
+                obj.update_data()
                 obj.tracking()
                 obj.view()
-                positions[obj.tiker] = obj.position
+                #обновление позиции в словаре обьектов для вывода
+                settings_tickers[obj.tiker]['position'] = obj.position
             print('_'*45)
             time.sleep(delay)
     except KeyboardInterrupt:
-        print(positions)
+        print(settings_tickers)
         # list_obj[2].view()
 
 
