@@ -17,14 +17,11 @@ import yfinance
 from backtesting import _plotting
 
 
-
-
 def get_figies(ticker: str) -> list:
     # Поиск figi по названию
     r = client.instruments.find_instrument(query=ticker)
     # return [i.figi for i in r.instruments]
     return r.instruments
-
 
 
 def get_tiker(instruments):
@@ -42,19 +39,16 @@ def get_tiker(instruments):
     return df
 
 
-
-
-
-
-
-
 def transform_stats(ticker: str, maximize: str, stats, interval: str) -> str:
     """
-    :param ticker:
-    :param maximize:
-    :param stats:
-    :return:
+    Преобразование статистики в строку через запятую для дальнейшего сохранения в csv файл
+
+    :param ticker: имя
+    :param maximize: что максимизируем
+    :param stats: остальная статистика
+    :return: строка со статистикой через запятую
     """
+
     stats_dict = stats.to_dict()
     column_stats = list(stats_dict.keys())[:27]  # статистика до SQN
     filter_stats_dict = {key: stats_dict.get(key) for key in column_stats}
@@ -74,8 +68,7 @@ def transform_stats(ticker: str, maximize: str, stats, interval: str) -> str:
     return ', '.join(stats_str) + '\n'
 
 
-
-def open_file_figies():
+def open_file():
     df_figies = pd.read_csv('tiker_for_search.csv')
     return df_figies
 
@@ -105,18 +98,17 @@ def train_param(candels):
     """END"""
 
 
-
-
 class Ticker:
     maximize_optimizer = 'Return [%]'
 
     def __init__(self, name: str, figi: str,
                  client_tinkoff,
                  from_day: datetime, until_day: datetime = now(),
+                 interval=CandleInterval.CANDLE_INTERVAL_HOUR
                  ):
         self.name = name
         self.figi = figi
-        self.interval = CandleInterval.CANDLE_INTERVAL_HOUR
+        self.interval = interval
         self.from_day = from_day
         self.until_day = until_day
         self.client = client_tinkoff
@@ -125,7 +117,19 @@ class Ticker:
         self.stats = None
 
     @staticmethod
-    def download_candles(client, figi, from_day, until_day, interval) -> [HistoricCandle]:
+    def download_candles(client, figi: str, from_day: datetime, until_day: datetime, interval: CandleInterval) -> [
+        HistoricCandle]:
+        """
+        Загрузка свечей от Тинькофф
+
+        :param client:
+        :param figi:
+        :param from_day: от какого дня
+        :param until_day: до какого дня
+        :param interval: интервал (1мин, 5мин, 15мин, 1час, 1 день)
+
+        :return: свечи в сыром виде
+        """
         # instruments: InstrumentsService = client.instruments
         # market_data: MarketDataService = client.market_data
 
@@ -168,6 +172,12 @@ class Ticker:
         return candels
 
     def create_df(self, candles: [HistoricCandle]) -> DataFrame:
+        """
+        Преобразование свечей в датафрейм
+
+        :param candles: свечи в сыром виде от Тинькоф
+        :return: Готовый датафрейм
+        """
         df = DataFrame([{
             'time': c.time,
             'Volume': c.volume,
@@ -190,6 +200,11 @@ class Ticker:
     #         print('ERORR', '-' * 180)
 
     def dowload_ohlc_3years(self):
+        """
+        Загрузка свечей за период в 3 года
+
+        :return: Готовый скеенный датафрейм
+        """
         from_day = [now() - timedelta(weeks=52), now() - timedelta(weeks=52 * 2), now() - timedelta(weeks=52 * 3)]
         until_day = [now(), from_day[0], from_day[1]]
         sum_candels = pd.DataFrame()
@@ -209,18 +224,32 @@ class Ticker:
     def cast_money(v):
         """
         https://tinkoff.github.io/investAPI/faq_custom_types/
-        :param v:
+        :param v: value
         :return:
         """
         return v.units + v.nano / 1e9  # nano - 9 нулей
 
     @staticmethod
     def save_file(line):
+        """
+        Добавление статистики в файл stats.csv
+
+        :param line: строка статистики
+        :return:
+        """
         with open('stats.csv', 'a') as f:
             f.write(line)
 
 
 def view_save_plot(ticker, stats, bt):
+    """
+    Отображение и сохранение графика в папку data/
+
+    :param ticker:
+    :param stats:
+    :param bt:
+    :return:
+    """
     try:
         bt.plot(plot_volume=True, plot_pl=True, filename=f'data/{ticker}_'
                                                          f'{stats._strategy.tenkan_param}-{stats._strategy.kijun_param}-'
@@ -230,6 +259,13 @@ def view_save_plot(ticker, stats, bt):
 
 
 def backtesting(ticker, tiker_data):
+    """
+    Функция Бэктестинга с сохранением и отображением графика
+
+    :param ticker: название
+    :param tiker_data: OHLC
+    :return: статистика
+    """
     print(f'[+]Backtesting start')
     bt = Backtest(tiker_data, Ichimoku_cross, cash=10000, commission=.002, exclusive_orders=True)
 
@@ -239,7 +275,16 @@ def backtesting(ticker, tiker_data):
     return stats
 
 
-def backtesting_optimize(ticker, tiker_data, maximize):
+def backtesting_optimize(ticker: str, tiker_data: pd.DataFrame, maximize: str):
+    """
+    Бэктестинг с оптимизацией параметров
+
+    :param ticker: имя
+    :param tiker_data: OHLC
+    :param maximize: что максимизируем
+    :return: статистика
+    """
+
     print(f'[+]Backtesting optimize start {now() + timedelta(hours=7)}')
     bt = Backtest(tiker_data, Ichimoku_cross, cash=10000, commission=.002, exclusive_orders=True)
     """
@@ -281,10 +326,10 @@ if __name__ == "__main__":
     # tickers = ['BABA']
     # figies = ['BBG006G2JVL2']
 
-    tickers = open_file_figies().Name
-    figies = open_file_figies().figi
+    tickers = open_file().Name
+    figies = open_file().figi
 
-    interval = CandleInterval.CANDLE_INTERVAL_HOUR
+    interval = CandleInterval.CANDLE_INTERVAL_DAY
     maximize_optimizer = 'Return [%]'
     from_day = now() - timedelta(weeks=52)
     # from_day = datetime(2006, 1, 1)
@@ -294,29 +339,26 @@ if __name__ == "__main__":
     with Client(TOKEN) as client:
 
         for i in range(len(tickers)):
-            #Список интервалов по 1 году
+            # Список интервалов по 1 году
             # candels = concat_candels()
             # candels = get_candles(figies[i], from_day=from_day, interval=interval)
             # data_yfin = yfinance.download(ticker, start=from_day, interval='1d')
 
-            # Без оптимизатора
-            # stats = backtesting(tickers[i], candels)
-            # line = transform_stats(ticker=tickers[i], stats=stats, maximize=maximize_optimizer, interval=interval._name_)
-            # save_file(line)
-
-            # С оптимизатором
-            # stats = backtesting_optimize(tickers[i], candels, maximize=maximize_optimizer)
-            # line = transform_stats(ticker=tickers[i], stats=stats, maximize=maximize_optimizer, interval=interval._name_)
-            # save_file(line)
-
             # train_param(candels)
 
             """Тест работы с помощью класса"""
-            ticker = Ticker(name=tickers[i], figi=figies[i], client_tinkoff=client, from_day=from_day)
-            # candels = ticker.dowload_ohlc_3years()
-            candels = ticker.ohlc
-            # Без оптимизатора
-            stats = backtesting(tickers[i], candels)
-            line = transform_stats(ticker=tickers[i], stats=stats, maximize=maximize_optimizer, interval=interval._name_)
-            Ticker.save_file(line)
+            ticker = Ticker(name=tickers[i], figi=figies[i], client_tinkoff=client, from_day=from_day,
+                            # interval=interval
+                            )
+            candels = ticker.dowload_ohlc_3years()
+            # candels = ticker.ohlc
 
+            # Без оптимизатора
+            # stats = backtesting(tickers[i], candels)
+
+            # С оптимизатором
+            stats = backtesting_optimize(tickers[i], candels, maximize=maximize_optimizer)
+
+            line = transform_stats(ticker=tickers[i], stats=stats, maximize=maximize_optimizer,
+                                   interval=interval._name_)
+            Ticker.save_file(line)

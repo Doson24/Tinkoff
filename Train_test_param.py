@@ -1,5 +1,5 @@
 import pandas as pd
-from main import open_file_figies
+from main import open_file
 
 
 def train_test(df: pd.DataFrame):
@@ -9,4 +9,4 @@ def train_test(df: pd.DataFrame):
 
 
 if __name__ == '__main__':
-    tickers = open_file_figies().Name
+    tickers = open_file().Name
