@@ -62,9 +62,11 @@ def transform_stats(ticker: str, maximize: str, stats, interval: str) -> str:
     stats_str.insert(0, str(senkou_optimaze))
     stats_str.insert(0, str(kijun_optimaze))
     stats_str.insert(0, str(tenkan_optimaze))
+    stats_str.insert(0, ticker)
+    #добавление в конец
     stats_str.append(maximize)
     stats_str.append(interval)
-    stats_str.insert(0, ticker)
+
     return ', '.join(stats_str) + '\n'
 
 
@@ -319,6 +321,10 @@ def backtesting_optimize(ticker: str, tiker_data: pd.DataFrame, maximize: str):
     return stats
 
 
+def filter_candels(candels, before_date:str):
+    return candels[candels.index <= pd.Timestamp(f'{before_date}T08:00:00.000000+0000')]
+
+
 if __name__ == "__main__":
     # CONTRACT_PREFIX = "tinkoff.public.invest.api.contract.v1."
     TOKEN = os.environ["TOKEN_test"]
@@ -329,8 +335,8 @@ if __name__ == "__main__":
     tickers = open_file().Name
     figies = open_file().figi
 
-    interval = CandleInterval.CANDLE_INTERVAL_DAY
-    maximize_optimizer = 'Return [%]'
+    interval = CandleInterval.CANDLE_INTERVAL_HOUR
+    maximize_optimizer = 'Win Rate [%]'
     from_day = now() - timedelta(weeks=52)
     # from_day = datetime(2006, 1, 1)
     # end_day = datetime(2015, 4, 30)
@@ -348,9 +354,11 @@ if __name__ == "__main__":
 
             """Тест работы с помощью класса"""
             ticker = Ticker(name=tickers[i], figi=figies[i], client_tinkoff=client, from_day=from_day,
-                            # interval=interval
+                            interval=interval
                             )
-            candels = ticker.dowload_ohlc_3years()
+            candels = ticker.dowload_ohlc_3years()                                                                      #23.12 20:00
+            #Фильтр
+            candels = filter_candels(candels, before_date='2021-09-01')
             # candels = ticker.ohlc
 
             # Без оптимизатора
