@@ -81,8 +81,9 @@ class MonitoringTiker:
 
         else:
             print(f"{now} {self.tiker} Нет сигналов на сделку")
+            print(f'{self.data.index.max()}')
 
-    def download_yf(self, period='1mo', interval='1h'):
+    def download_yf(self, period='1d', interval='1m'):
         yf_tiker = yf.Ticker(self.tiker)
         tiker_data = yf_tiker.history(period=period, interval=interval)
         return tiker_data
@@ -109,13 +110,19 @@ def main():
 
     list_obj = []
     for tiker, param in positions.items():
-        mon_tiker = MonitoringTiker(tiker, param['position'], param['settings'][0], param['settings'][1], param['settings'][2])
+        mon_tiker = MonitoringTiker(tiker,
+                                    position=param['position'],
+                                    tenkan_param=param['settings'][0],
+                                    kijun_param=param['settings'][1],
+                                    senkou_param=param['settings'][2])
         list_obj.append(mon_tiker)
 
     try:
         while True:
-            for obj in list_obj:
+            for obj in list_obj[0:1]:
+                obj.data = obj.download_yf()
                 obj.tracking()
+                obj.view()
                 positions[obj.tiker] = obj.position
             print('_'*45)
             time.sleep(delay)
