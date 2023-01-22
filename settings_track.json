@@ -1,6 +1,8 @@
 {
       "BABA": {
+            "figi": "BBG006G2JVL2",
             "position": true,
+            "quantity": 1,
             "settings": [
                   "9",
                   "26",
@@ -9,7 +11,9 @@
             "interval": "CANDLE_INTERVAL_DAY"
       },
       "EBS": {
-            "position": false,
+            "figi": "BBG000GW06J7",
+            "position": true,
+            "quantity": 1,
             "settings": [
                   "9",
                   "26",
@@ -18,7 +22,9 @@
             "interval": "CANDLE_INTERVAL_DAY"
       },
       "KO": {
+            "figi": "BBG000BMX289",
             "position": false,
+            "quantity": 1,
             "settings": [
                   "9",
                   "26",
@@ -27,7 +33,9 @@
             "interval": "CANDLE_INTERVAL_DAY"
       },
       "T": {
+            "figi": "BBG000BSJK37",
             "position": false,
+            "quantity": 1,
             "settings": [
                   "9",
                   "26",
@@ -36,7 +44,9 @@
             "interval": "CANDLE_INTERVAL_DAY"
       },
       "TAL": {
+            "figi": "BBG0016XJ8S0",
             "position": false,
+            "quantity": 1,
             "settings": [
                   "9",
                   "26",
@@ -45,7 +55,9 @@
             "interval": "CANDLE_INTERVAL_DAY"
       },
       "VIPS": {
+            "figi": "BBG002NLDLV8",
             "position": false,
+            "quantity": 1,
             "settings": [
                   "9",
                   "26",
