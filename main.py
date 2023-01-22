@@ -119,10 +119,11 @@ class Ticker:
         self.stats = None
 
     @staticmethod
-    def download_candles(client, figi: str, from_day: datetime, until_day: datetime, interval: CandleInterval) -> [
-        HistoricCandle]:
+    def download_candles(client, figi: str, from_day: datetime, until_day: datetime, interval: CandleInterval) \
+            -> [HistoricCandle]:
         """
         Загрузка свечей от Тинькофф
+        Статик метод для - можно использовать без возможности создания экземпляра
 
         :param client:
         :param figi:
@@ -189,7 +190,7 @@ class Ticker:
             'Low': self.cast_money(c.low),
         } for c in candles])
         df.index = df.time
-        print(f'[+] Get all candles ')
+        # print(f'[+] {self.name} - Candles is Downloaded  ')
         return df
 
     # def view_save_plot(self, bt):
@@ -321,7 +322,14 @@ def backtesting_optimize(ticker: str, tiker_data: pd.DataFrame, maximize: str):
     return stats
 
 
-def filter_candels(candels, before_date:str):
+def filter_candels(candels, before_date: str):
+    """
+    Фильтр свечей всё что меньше заданной даты
+
+    :param candels:
+    :param before_date:
+    :return:
+    """
     return candels[candels.index <= pd.Timestamp(f'{before_date}T08:00:00.000000+0000')]
 
 
@@ -345,6 +353,7 @@ if __name__ == "__main__":
     with Client(TOKEN) as client:
 
         for i in range(len(tickers)):
+
             # Список интервалов по 1 году
             # candels = concat_candels()
             # candels = get_candles(figies[i], from_day=from_day, interval=interval)
@@ -370,3 +379,4 @@ if __name__ == "__main__":
             line = transform_stats(ticker=tickers[i], stats=stats, maximize=maximize_optimizer,
                                    interval=interval._name_)
             Ticker.save_file(line)
+
